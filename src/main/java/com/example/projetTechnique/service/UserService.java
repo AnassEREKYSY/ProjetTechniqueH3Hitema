@@ -5,6 +5,7 @@ import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.UserRepository;
 import com.example.projetTechnique.utilities.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +19,10 @@ public class UserService {
     private UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private HttpServletRequest request;
 
     @Autowired
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
@@ -33,6 +38,15 @@ public class UserService {
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+    }
+
+    public Long getLoggedInUserId(String token) {
+        if (token != null && jwtUtil.validateToken(token)) {
+            String email = jwtUtil.extractEmail(token);
+            User user = userRepository.findByEmail(email);
+            return user != null ? user.getId() : null;
+        }
+        return null;
     }
 
     public void deleteUser(Long userId) {
@@ -59,17 +73,6 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(Role.USER);
         return userRepository.save(user);
-    }
-
-    public User getProfile(Long userId) {
-        return userRepository.findById(userId).orElse(null);
-    }
-
-    public User updateEmail(Long userId, String newEmail) {
-        return userRepository.findById(userId).map(user -> {
-            user.setEmail(newEmail);
-            return userRepository.save(user);
-        }).orElse(null);
     }
 
     public User findByEmailAndPassword(String email, String password) {

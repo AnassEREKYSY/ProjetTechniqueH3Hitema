@@ -2,8 +2,10 @@ package com.example.projetTechnique.model;
 
 
 import com.example.projetTechnique.Enum.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -32,6 +34,18 @@ public class User {
     private String resetToken;
 
     private String token;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Post> posts;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Like> likes;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Comment> comments;
 
 
     public Long getId() {
@@ -112,6 +126,25 @@ public class User {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public List<Post> getPosts() {
+        return posts;
+    }
+    public void setPosts(List<Post> posts) {
+        this.posts = posts;
+    }
+    public List<Like> getLikes() {
+        return likes;
+    }
+    public void setLikes(List<Like> likes) {
+        this.likes = likes;
+    }
+    public List<Comment> getComments() {
+        return comments;
+    }
+    public void setComments(List<Comment> comments) {
+        this.comments = comments;
     }
 
     @Override
