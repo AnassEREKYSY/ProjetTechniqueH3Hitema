@@ -7,6 +7,7 @@ import com.example.projetTechnique.utilities.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -49,6 +50,7 @@ public class UserService {
         return null;
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public void deleteUser(Long userId) {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));

@@ -6,6 +6,7 @@ import com.example.projetTechnique.utilities.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
@@ -20,6 +21,7 @@ public class CommentController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @PreAuthorize("hasRole('ADMIN') and hasRole('ROLE_USER') and #userId == authentication.principal.id")
     @PostMapping("/create/{postId}")
     public ResponseEntity<?> createComment(@RequestHeader("Authorization") String token,
                                            @PathVariable("postId") Long postId,
@@ -34,6 +36,7 @@ public class CommentController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete/{commentId}")
     public ResponseEntity<?> deleteComment(@RequestHeader("Authorization") String token,
                                            @PathVariable("commentId") Long commentId) {
@@ -69,6 +72,7 @@ public class CommentController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN') and hasRole('ROLE_USER') and #userId == authentication.principal.id")
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateComment(@RequestHeader(name = "Authorization") String token,
                                            @PathVariable Long id,
