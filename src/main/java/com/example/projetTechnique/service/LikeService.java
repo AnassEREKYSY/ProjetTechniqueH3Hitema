@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.AccessDeniedException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +29,9 @@ public class LikeService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    NotificationService notificationService;
+
     public ResponseEntity<?> createLike(String token, Long postId) {
         try {
             Long userId = userService.getLoggedInUserId(token);
@@ -37,11 +39,20 @@ public class LikeService {
             Optional<Post> postOptional = postRepository.findById(postId);
 
             if (userOptional.isPresent() && postOptional.isPresent()) {
+                User user = userOptional.get();
+                Post post = postOptional.get();
+                Optional<Like> existingLike = likeRepository.findByUserIdAndPostId(user.getId(), post.getId());
+                if (existingLike.isPresent()) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body("{\"message\":\"User has already liked this post\"}");
+                }
                 Like like = new Like();
-                like.setUser(userOptional.get());
-                like.setPost(postOptional.get());
+                like.setUser(user);
+                like.setPost(post);
                 like.setDateLike(new Date());
                 likeRepository.save(like);
+                String message = "User " + user.getUserName() + " liked your post.";
+                notificationService.createNotification(post.getUser().getId(), postId, message);
+
                 return ResponseEntity.status(HttpStatus.CREATED).body(like);
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User or Post not found\"}");
@@ -50,7 +61,7 @@ public class LikeService {
         }
     }
 
-    public ResponseEntity<?> deleteLike(String token, Long likeId) throws AccessDeniedException {
+    public ResponseEntity<?> deleteLike(String token, Long likeId){
         try {
             Long userId = userService.getLoggedInUserId(token);
             Optional<Like> likeOptional = likeRepository.findById(likeId);

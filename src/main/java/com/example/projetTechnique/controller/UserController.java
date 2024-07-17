@@ -62,7 +62,13 @@ public class UserController {
     @GetMapping("/profile")
     @PreAuthorize("permitAll")
     public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String token) {
-        return getProfile(token);
+        return userService.getProfile(token);
+    }
+
+    @PutMapping("/Updateprofile")
+    @PreAuthorize("permitAll")
+    public ResponseEntity<?> updateProfile(@RequestHeader("Authorization") String token, @RequestBody User updatedUser) {
+        return userService.updateProfile(token, updatedUser);
     }
 
     @PostMapping("/forgot-password")

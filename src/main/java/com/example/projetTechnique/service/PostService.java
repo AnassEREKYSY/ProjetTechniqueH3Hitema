@@ -1,15 +1,16 @@
 package com.example.projetTechnique.service;
 
-import com.example.projetTechnique.Enum.Role;
 import com.example.projetTechnique.model.Post;
 import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.PostRepository;
+import com.example.projetTechnique.repository.UserRepository;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Date;
@@ -24,13 +25,25 @@ public class PostService {
     @Autowired
     UserService userService;
 
-    public ResponseEntity<?> createPost(Post post , String token) {
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    public ResponseEntity<?> createPost(Post post, String token, MultipartFile imageFile) {
         String jwtToken = token.substring(7);
         Long loggedInUserId = userService.getLoggedInUserId(jwtToken);
         if (loggedInUserId != null) {
             User loggedInUser = userService.findUserById(loggedInUserId);
             post.setUser(loggedInUser);
             post.setDateCreation(new Date());
+
+            if (imageFile != null && !imageFile.isEmpty()) {
+                String imagePath = fileStorageService.store(imageFile);
+                post.setImage(imagePath);
+            }
+
             postRepository.save(post);
             return ResponseEntity.status(HttpStatus.CREATED).body(post);
         } else {
@@ -57,7 +70,7 @@ public class PostService {
         }
     }
 
-    public ResponseEntity<?> deletePost(Long id,String token ) throws AccessDeniedException {
+    public ResponseEntity<?> deletePost(Long id,String token ) {
         try {
             Long userId = userService.getLoggedInUserId(token);
             User user = userService.findUserById(userId);
@@ -82,8 +95,7 @@ public class PostService {
         }
     }
 
-    public ResponseEntity<?> updatePost(Long idPost, Post updatedPost) {
-
+    public ResponseEntity<?> updatePost(Long idPost, Post updatedPost, MultipartFile imageFile) {
         try {
             Optional<Post> optionalPost = postRepository.findById(idPost);
             if (optionalPost.isPresent()) {
@@ -100,6 +112,11 @@ public class PostService {
                 }
                 if (updatedPost.getUser() != null) {
                     existingPost.setUser(updatedPost.getUser());
+                }
+
+                if (imageFile != null && !imageFile.isEmpty()) {
+                    String imagePath = fileStorageService.store(imageFile);
+                    existingPost.setImage(imagePath);
                 }
 
                 postRepository.save(existingPost);

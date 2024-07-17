@@ -34,6 +34,9 @@ public class CommentService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    NotificationService notificationService;
+
     public ResponseEntity<?> createComment(String token, Long postId, Comment comment) {
 
         try {
@@ -45,6 +48,8 @@ public class CommentService {
             comment.setPost(post);
             comment.setDateComment(new Date());
             commentRepository.save(comment);
+            String message = "User " + user.getUserName() + " liked your post.";
+            notificationService.createNotification(post.getUser().getId(), postId, message);
             return ResponseEntity.status(HttpStatus.CREATED).body(comment);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User or Post not found\"}");

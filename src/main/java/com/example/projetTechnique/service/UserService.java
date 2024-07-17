@@ -184,4 +184,48 @@ public class UserService {
         return ResponseEntity.ok(user);
     }
 
+    @Transactional
+    public ResponseEntity<?> updateProfile(String token, User updatedUser) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        if (!JwtUtil.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
+        }
+
+        String email = JwtUtil.extractEmail(token);
+        if (email == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
+        }
+
+        User existingUser = userRepository.findByEmail(email);
+        if (existingUser == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+
+        if (updatedUser.getFirstName() != null && !updatedUser.getFirstName().isEmpty()) {
+            existingUser.setFirstName(updatedUser.getFirstName());
+        }
+        if (updatedUser.getLastName() != null && !updatedUser.getLastName().isEmpty()) {
+            existingUser.setLastName(updatedUser.getLastName());
+        }
+        if (updatedUser.getEmail() != null && !updatedUser.getEmail().isEmpty()) {
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+        if (updatedUser.getUserName() != null && !updatedUser.getUserName().isEmpty()) {
+            existingUser.setUserName(updatedUser.getUserName());
+        }
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            String hashedPassword = passwordEncoder.encode(updatedUser.getPassword());
+            existingUser.setPassword(hashedPassword);
+        }
+        try {
+            userRepository.save(existingUser);
+            return ResponseEntity.ok(existingUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User update failed\"}");
+        }
+    }
+
 }
