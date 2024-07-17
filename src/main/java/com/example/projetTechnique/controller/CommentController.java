@@ -26,14 +26,7 @@ public class CommentController {
     public ResponseEntity<?> createComment(@RequestHeader("Authorization") String token,
                                            @PathVariable("postId") Long postId,
                                            @RequestBody Comment comment) {
-        try {
-            Comment createdComment = commentService.createComment(token, postId, comment);
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User or Post not found\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to create comment: " + e.getMessage() + "\"}");
-        }
+        return commentService.createComment(token, postId, comment);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -54,22 +47,12 @@ public class CommentController {
 
     @GetMapping("/getAll")
     public ResponseEntity<?> getAllComments() {
-        List<Comment> comments = commentService.getAllComments();
-        if (!comments.isEmpty()) {
-            return ResponseEntity.ok(comments);
-        } else {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("{\"message\":\"No comments available\"}");
-        }
+        return commentService.getAllComments();
     }
 
     @GetMapping("/one/{commentId}")
     public ResponseEntity<?> getCommentById(@PathVariable Long commentId) {
-        Comment comment = commentService.getCommentById(commentId);
-        if (comment != null) {
-            return ResponseEntity.ok(comment);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Comment not found with id: " + commentId + "\"}");
-        }
+        return  commentService.getCommentById(commentId);
     }
 
     @PreAuthorize("hasRole('ADMIN') and hasRole('ROLE_USER') and #userId == authentication.principal.id")

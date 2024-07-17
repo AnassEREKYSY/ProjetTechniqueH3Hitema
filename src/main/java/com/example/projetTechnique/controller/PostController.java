@@ -30,68 +30,29 @@ public class PostController {
     @PreAuthorize("hasRole('ADMIN') and hasRole('ROLE_USER') and #userId == authentication.principal.id")
     @PostMapping("/create")
     public ResponseEntity<?> createPost(@RequestBody Post post, @RequestHeader("Authorization") String token) {
-        String jwtToken = token.substring(7); // Remove "Bearer " prefix
-        Long loggedInUserId = userService.getLoggedInUserId(jwtToken);
-        if (loggedInUserId != null) {
-            User loggedInUser = userService.getUserById(loggedInUserId); // Assuming you have this method
-            post.setUser(loggedInUser);
-            Post createdPost = postService.createPost(post);
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdPost);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
-        }
+        return postService.createPost(post,token);
     }
 
     @GetMapping("/getAll")
     public ResponseEntity<?> getAllPosts() {
-        List<Post> posts = postService.getAllPosts();
-        if (!posts.isEmpty()) {
-            return ResponseEntity.ok(posts);
-        } else {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("{\"message\":\"No posts available\"}");
-        }
+        return postService.getAllPosts();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete/{idPost}")
-    public ResponseEntity<?> deletePost(@PathVariable("idPost") Long idPost, @RequestHeader("Authorization") String token) {
-        try {
-            Long userId = userService.getLoggedInUserId(token);
-            User user = userService.getUserById(userId);
-
-            postService.deletePost(idPost, user);
-
-            return ResponseEntity.ok("{\"message\":\"Post deleted successfully\"}");
-        } catch (MalformedJwtException | IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Invalid JWT token: " + e.getMessage() + "\"}");
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"Access Denied: " + e.getMessage() + "\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete post: " + e.getMessage() + "\"}");
-        }
+    public ResponseEntity<?> deletePost(@PathVariable("idPost") Long idPost, @RequestHeader("Authorization") String token) throws AccessDeniedException {
+        return postService.deletePost(idPost,token);
     }
 
     @GetMapping("/one/{id}")
     public ResponseEntity<?> getPostById(@PathVariable Long id) {
-        try {
-            Post post = postService.getPostById(id);
-            return ResponseEntity.ok(post);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Post not found with id: " + id + "\"}");
-        }
+        return postService.getPostById(id);
     }
 
     @PreAuthorize("hasRole('ADMIN') and hasRole('ROLE_USER') and #userId == authentication.principal.id")
     @PutMapping("/update/{idPost}")
     public ResponseEntity<?> updatePost(@PathVariable("idPost") Long idPost, @RequestBody Post updatedPost) {
-        try {
-            Post post = postService.updatePost(idPost, updatedPost);
-            return ResponseEntity.ok(post);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Post with id " + idPost + " not found\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to update post\"}");
-        }
+        return postService.updatePost(idPost,updatedPost);
     }
 
 }
