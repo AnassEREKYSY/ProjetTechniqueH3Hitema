@@ -28,8 +28,8 @@ public class LikeService {
     @Autowired
     private UserService userService;
 
-    public Like createLike(String token,Long postId) {
-        Long userId=userService.getLoggedInUserId(token);
+    public Like createLike(String token, Long postId) {
+        Long userId = userService.getLoggedInUserId(token);
         Optional<User> userOptional = userRepository.findById(userId);
         Optional<Post> postOptional = postRepository.findById(postId);
 
@@ -44,8 +44,8 @@ public class LikeService {
         }
     }
 
-    public void deleteLike(String token,Long likeId) throws AccessDeniedException {
-        Long userId=userService.getLoggedInUserId(token);
+    public void deleteLike(String token, Long likeId) throws AccessDeniedException {
+        Long userId = userService.getLoggedInUserId(token);
         Optional<Like> likeOptional = likeRepository.findById(likeId);
         Optional<User> userOptional = userRepository.findById(userId);
         if (likeOptional.isPresent() && userOptional.isPresent()) {
@@ -65,7 +65,7 @@ public class LikeService {
     }
 
     public Like getLikeById(Long id) {
-        return likeRepository.findById(id).orElse(null);
+        return likeRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Like not found with id: " + id));
     }
 
 }

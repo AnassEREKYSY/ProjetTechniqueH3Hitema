@@ -32,28 +32,44 @@ public class UserController {
     }
 
     @GetMapping("/one/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        try {
+            User user = userService.getUserById(id);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User not found with id: " + id + "\"}");
+        }
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody User user) {
-        userService.register(user);
-        return ResponseEntity.ok("User registered successfully");
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        try {
+            User createdUser = userService.register(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User registration failed\"}");
+        }
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.ok("User registered successfully");
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        try {
+            userService.deleteUser(id);
+            return ResponseEntity.ok("{\"message\":\"User deleted successfully\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User deletion failed\"}");
+        }
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
-        updatedUser.setId(id); // Ensure the ID in the path matches the ID in the body
-        userService.updateUser(updatedUser);
-        return ResponseEntity.ok(updatedUser);
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+        try {
+            updatedUser.setId(id); // Ensure the ID in the path matches the ID in the body
+            User user = userService.updateUser(updatedUser);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User update failed\"}");
+        }
     }
 
     @PostMapping("/login")

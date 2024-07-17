@@ -20,67 +20,74 @@ public class CommentController {
     @Autowired
     private JwtUtil jwtUtil;
 
-
     @PostMapping("/create/{postId}")
-    public ResponseEntity<Comment> createComment(@RequestHeader("Authorization") String token,
-                                                 @PathVariable("postId") Long postId,
-                                                 @RequestBody Comment comment) {
+    public ResponseEntity<?> createComment(@RequestHeader("Authorization") String token,
+                                           @PathVariable("postId") Long postId,
+                                           @RequestBody Comment comment) {
         try {
             Comment createdComment = commentService.createComment(token, postId, comment);
-            return ResponseEntity.ok(createdComment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User or Post not found\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to create comment: " + e.getMessage() + "\"}");
         }
     }
 
     @DeleteMapping("/delete/{commentId}")
-    public ResponseEntity<Void> deleteComment(@RequestHeader("Authorization") String token,
-                                              @PathVariable("commentId") Long commentId) {
+    public ResponseEntity<?> deleteComment(@RequestHeader("Authorization") String token,
+                                           @PathVariable("commentId") Long commentId) {
         try {
             commentService.deleteComment(token, commentId);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok("{\"message\":\"Comment deleted successfully\"}");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Comment not found\"}");
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(403).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"Access Denied\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment: " + e.getMessage() + "\"}");
         }
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<Comment>> getAllComments() {
+    public ResponseEntity<?> getAllComments() {
         List<Comment> comments = commentService.getAllComments();
-        return ResponseEntity.ok(comments);
+        if (!comments.isEmpty()) {
+            return ResponseEntity.ok(comments);
+        } else {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("{\"message\":\"No comments available\"}");
+        }
     }
 
     @GetMapping("/one/{commentId}")
-    public ResponseEntity<Comment> getCommentById(@PathVariable Long commentId) {
+    public ResponseEntity<?> getCommentById(@PathVariable Long commentId) {
         Comment comment = commentService.getCommentById(commentId);
         if (comment != null) {
             return ResponseEntity.ok(comment);
         } else {
-            return ResponseEntity.status(404).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Comment not found with id: " + commentId + "\"}");
         }
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<Comment> updateComment(
-            @RequestHeader(name = "Authorization") String token,
-            @PathVariable Long id,
-            @RequestBody Comment updatedComment) {
-
-        Long loggedInUserId = jwtUtil.extractUserId(token); // Extract user ID from token
-
-        if (loggedInUserId == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Or handle as per your application's authentication logic
+    public ResponseEntity<?> updateComment(@RequestHeader(name = "Authorization") String token,
+                                           @PathVariable Long id,
+                                           @RequestBody Comment updatedComment) {
+        try {
+            Long loggedInUserId = jwtUtil.extractUserId(token);
+            if (loggedInUserId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
+            }
+            Comment comment = commentService.updateComment(id, loggedInUserId, updatedComment);
+            if (comment != null) {
+                return ResponseEntity.ok(comment);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Comment not found with id: " + id + "\"}");
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"User is not authorized to update this comment\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to update comment: " + e.getMessage() + "\"}");
         }
-
-        Comment comment = commentService.updateComment(id, loggedInUserId, updatedComment);
-
-        if (comment == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(comment);
     }
-
 }

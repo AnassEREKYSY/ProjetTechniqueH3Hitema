@@ -4,6 +4,7 @@ import com.example.projetTechnique.model.Like;
 import com.example.projetTechnique.service.LikeService;
 import com.example.projetTechnique.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,41 +20,46 @@ public class LikeController {
     private UserService userService;
 
     @PostMapping("/create/{postId}")
-    public ResponseEntity<Like> createLike(@RequestHeader("Authorization") String token, @PathVariable("postId") Long postId) {
+    public ResponseEntity<?> createLike(@RequestHeader("Authorization") String token, @PathVariable("postId") Long postId) {
         try {
             Like createdLike = likeService.createLike(token, postId);
-            return ResponseEntity.ok(createdLike);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdLike);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User or Post not found\"}");
         }
     }
 
     @DeleteMapping("/delete/{likeId}")
-    public ResponseEntity<Void> deleteLike(@PathVariable("likeId") Long likeId, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> deleteLike(@PathVariable("likeId") Long likeId, @RequestHeader("Authorization") String token) {
         try {
             likeService.deleteLike(token, likeId);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok("{\"message\":\"Like deleted successfully\"}");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Like or User not found\"}");
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(403).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"Access Denied\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete like: " + e.getMessage() + "\"}");
         }
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<Like>> getAllLikes() {
+    public ResponseEntity<?> getAllLikes() {
         List<Like> likes = likeService.getAllLikes();
-        return ResponseEntity.ok(likes);
+        if (!likes.isEmpty()) {
+            return ResponseEntity.ok(likes);
+        } else {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("{\"message\":\"No likes available\"}");
+        }
     }
 
     @GetMapping("/one/{id}")
-    public ResponseEntity<Like> getLikeById(@PathVariable Long id) {
+    public ResponseEntity<?> getLikeById(@PathVariable Long id) {
         Like like = likeService.getLikeById(id);
         if (like != null) {
             return ResponseEntity.ok(like);
         } else {
-            return ResponseEntity.status(404).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Like not found with id: " + id + "\"}");
         }
     }
-
 }

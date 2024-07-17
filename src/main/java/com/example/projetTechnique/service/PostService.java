@@ -28,12 +28,13 @@ public class PostService {
     }
 
     public Post getPostById(Long id) {
-        return postRepository.findById(id).orElse(null);
+        return postRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with id: " + id));
     }
 
     public void deletePost(Long id, User user) throws AccessDeniedException {
         Post post = postRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Post not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with id: " + id));
         if (post.getUser() == null) {
             throw new IllegalStateException("Post does not have an associated user");
         }
@@ -48,10 +49,20 @@ public class PostService {
 
         if (optionalPost.isPresent()) {
             Post existingPost = optionalPost.get();
-            existingPost.setImage(updatedPost.getImage());
-            existingPost.setContenu(updatedPost.getContenu());
-            existingPost.setDateCreation(updatedPost.getDateCreation());
-            existingPost.setUser(updatedPost.getUser());
+
+            if (updatedPost.getImage() != null && !updatedPost.getImage().isEmpty()) {
+                existingPost.setImage(updatedPost.getImage());
+            }
+            if (updatedPost.getContenu() != null && !updatedPost.getContenu().isEmpty()) {
+                existingPost.setContenu(updatedPost.getContenu());
+            }
+            if (updatedPost.getDateCreation() != null) {
+                existingPost.setDateCreation(updatedPost.getDateCreation());
+            }
+            if (updatedPost.getUser() != null) {
+                existingPost.setUser(updatedPost.getUser());
+            }
+
             return postRepository.save(existingPost);
         } else {
             throw new IllegalArgumentException("Post with id " + idPost + " not found");

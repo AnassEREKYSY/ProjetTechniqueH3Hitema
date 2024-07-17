@@ -56,17 +56,21 @@ public class UserService {
         userRepository.delete(existingUser);
     }
 
-    public void updateUser(User updatedUser) {
+    public User updateUser(User updatedUser) {
         User existingUser = userRepository.findById(updatedUser.getId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + updatedUser.getId()));
 
         existingUser.setFirstName(updatedUser.getFirstName());
         existingUser.setLastName(updatedUser.getLastName());
         existingUser.setEmail(updatedUser.getEmail());
-        existingUser.setPassword(updatedUser.getPassword());
         existingUser.setUserName(updatedUser.getUserName());
 
-        userRepository.save(existingUser);
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            String hashedPassword = passwordEncoder.encode(updatedUser.getPassword());
+            existingUser.setPassword(hashedPassword);
+        }
+
+        return userRepository.save(existingUser);
     }
 
     public User register(User user) {
