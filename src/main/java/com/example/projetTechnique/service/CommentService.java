@@ -40,7 +40,8 @@ public class CommentService {
     public ResponseEntity<?> createComment(String token, Long postId, Comment comment) {
 
         try {
-            Long userId = userService.getLoggedInUserId(token);
+            String jwtToken = token.substring(7);
+            Long userId = userService.getLoggedInUserId(jwtToken);
             User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
             Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
@@ -52,9 +53,9 @@ public class CommentService {
             notificationService.createNotification(post.getUser().getId(), postId, message, NotificationType.COMMENT);
             return ResponseEntity.status(HttpStatus.CREATED).body(comment);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User or Post not found\"}");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or Post not found");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to create comment: " + e.getMessage() + "\"}");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create comment: " + e.getMessage() + "\"}");
         }
     }
 
@@ -66,10 +67,9 @@ public class CommentService {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment");
             }
             commentRepository.delete(comment);
-            if(commentRepository.findById(commentId)==null){
+            if (commentRepository.findById(commentId).isEmpty()) {
                 return ResponseEntity.ok("{\"message\":\"Comment deleted successfully\"}");
-            }
-            else{
+            } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment");
             }
     }
