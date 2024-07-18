@@ -68,6 +68,7 @@ public class LikeService {
     }
 
     public ResponseEntity<?> deleteLike(String token, Long likeId){
+
             String jwtToken = token.substring(7);
             Long userId = userService.getLoggedInUserId(jwtToken);
             Optional<Like> likeOptional = likeRepository.findById(likeId);
@@ -80,9 +81,9 @@ public class LikeService {
                     //if(TestLike==null){
                         return ResponseEntity.ok("{\"message\":\"Like deleted successfully\"}");
                     //}
-                }
             }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete like\"}");
+        }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete like");
     }
 
     public ResponseEntity<?> getAllLikes() {
