@@ -49,14 +49,13 @@ public class CommentService {
             comment.setPost(post);
             comment.setDateComment(new Date());
             commentRepository.save(comment);
-            String message = "User " + user.getUserName() + " liked your post.";
+            String message = "User " + user.getUserName() + "commented on your post.";
             notificationService.createNotification(post.getUser().getId(), postId, message, NotificationType.COMMENT);
             return ResponseEntity.status(HttpStatus.CREATED).body(comment);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or Post not found");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create comment: " + e.getMessage() + "\"}");
-        }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create comment: " + e.getMessage() + "\"}");        }
     }
 
     public ResponseEntity<?> deleteComment(String token, Long commentId) {

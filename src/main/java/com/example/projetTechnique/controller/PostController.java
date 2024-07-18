@@ -25,9 +25,10 @@ public class PostController {
         this.userService = userService;
     }
 
+
     @PostMapping("/create")
-    public ResponseEntity<?> createPost(@RequestParam("post") String postJson, @RequestHeader("Authorization") String token, @RequestParam("image") MultipartFile imageFile) throws JsonProcessingException {
-        return postService.createPost(new ObjectMapper().readValue(postJson, Post.class), token, imageFile);
+    public ResponseEntity<?> createPost(@RequestBody String postJson, @RequestHeader("Authorization") String token) throws JsonProcessingException {
+        return postService.createPost(new ObjectMapper().readValue(postJson, Post.class), token);
     }
 
     @GetMapping("/getAll")

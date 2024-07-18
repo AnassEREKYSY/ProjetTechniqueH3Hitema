@@ -32,6 +32,17 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+
+    public Notification createMessageNotification(Long recipientId, Long postId, String message, NotificationType type) {
+        Notification notification = new Notification();
+        notification.setRecipientId(recipientId);
+        notification.setPostId(postId);
+        notification.setMessage(message);
+        notification.setTimestamp(LocalDateTime.now());
+        notification.setType(type);
+        return notificationRepository.save(notification);
+    }
+
     public List<Notification> getNotificationsForUser(Long userId) {
         return notificationRepository.findByRecipientId(userId);
     }

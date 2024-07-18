@@ -56,7 +56,7 @@ public class PostServiceTest {
         when(fileStorageService.store(any(MultipartFile.class))).thenReturn("uploaded_image_path");
         when(postRepository.save(any(Post.class))).thenReturn(post);
 
-        ResponseEntity<?> response = postService.createPost(post, token, imageFile);
+        ResponseEntity<?> response = postService.createPost(post, token);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(post, response.getBody());
