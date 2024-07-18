@@ -29,7 +29,7 @@ public class PostService {
     @Autowired
     private FileStorageService fileStorageService;
 
-    public ResponseEntity<?> createPost(Post post, String token, MultipartFile imageFile) {
+    public ResponseEntity<?> createPost(Post post, String token) {
         String jwtToken = token.substring(7);
         Long loggedInUserId = userService.getLoggedInUserId(jwtToken);
         if (loggedInUserId != null) {
@@ -37,10 +37,10 @@ public class PostService {
             post.setUser(loggedInUser);
             post.setDateCreation(new Date());
 
-            if (imageFile != null && !imageFile.isEmpty()) {
-                String imagePath = fileStorageService.store(imageFile);
-                post.setImage(imagePath);
-            }
+//            if (imageFile != null && !imageFile.isEmpty()) {
+//                String imagePath = fileStorageService.store(imageFile);
+//                post.setImage(imagePath);
+//            }
 
             postRepository.save(post);
             return ResponseEntity.status(HttpStatus.CREATED).body(post);
