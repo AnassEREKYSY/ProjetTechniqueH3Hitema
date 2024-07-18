@@ -49,7 +49,9 @@ public class CommentService {
             comment.setPost(post);
             comment.setDateComment(new Date());
             commentRepository.save(comment);
+
             String message = "User " + user.getUserName() + "commented on your post.";
+
             notificationService.createNotification(post.getUser().getId(), postId, message, NotificationType.COMMENT);
             return ResponseEntity.status(HttpStatus.CREATED).body(comment);
         } catch (IllegalArgumentException e) {

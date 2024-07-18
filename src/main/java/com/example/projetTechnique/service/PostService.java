@@ -36,8 +36,7 @@ public class PostService {
             User loggedInUser = userService.findUserById(loggedInUserId);
             post.setUser(loggedInUser);
             post.setDateCreation(new Date());
-
-
+            
 
             postRepository.save(post);
             return ResponseEntity.status(HttpStatus.CREATED).body(post);
