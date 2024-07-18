@@ -76,10 +76,10 @@ public class LikeService {
                 Like like = likeOptional.get();
                 if (like.getUser().equals(userOptional.get())) {
                     likeRepository.deleteById(likeId);
-                    Like TestLike=likeRepository.findById(likeId).get();
-                    if(TestLike==null){
+                    //Like TestLike=likeRepository.findById(likeId).get();
+                    //if(TestLike==null){
                         return ResponseEntity.ok("{\"message\":\"Like deleted successfully\"}");
-                    }
+                    //}
                 }
             }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete like\"}");
