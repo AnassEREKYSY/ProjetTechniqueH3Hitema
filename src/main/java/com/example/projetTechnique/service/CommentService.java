@@ -40,7 +40,8 @@ public class CommentService {
     public ResponseEntity<?> createComment(String token, Long postId, Comment comment) {
 
         try {
-            Long userId = userService.getLoggedInUserId(token);
+            String jwtToken = token.substring(7);
+            Long userId = userService.getLoggedInUserId(jwtToken);
             User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
             Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
