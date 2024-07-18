@@ -52,5 +52,10 @@ public class PostController {
         return postService.updatePost(idPost, new ObjectMapper().readValue(postJson, Post.class), imageFile);
     }
 
+    @PostMapping("/uploadImage/{postId}")
+    public ResponseEntity<?> uploadImage(@PathVariable("postId") Long postId, @RequestParam("image") MultipartFile imageFile, @RequestHeader("Authorization") String token) {
+        return postService.uploadImage(postId, imageFile, token);
+    }
+
 
 }

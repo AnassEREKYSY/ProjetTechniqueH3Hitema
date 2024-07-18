@@ -67,6 +67,8 @@ public class JwtUtil {
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
-        throw new IllegalArgumentException("Invalid token format");
+        else{
+            return bearerToken;
+        }
     }
 }

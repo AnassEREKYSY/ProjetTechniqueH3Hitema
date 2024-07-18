@@ -8,6 +8,7 @@ import com.example.projetTechnique.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -70,5 +71,12 @@ public class UserController {
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
         return userService.resetPassword(request.getResetToken(), request.getNewPassword());
+    }
+
+
+    @PostMapping("/uploadProfilImage")
+    public ResponseEntity<?> uploadProfileImage(@RequestHeader("Authorization") String token,
+                                                @RequestParam("imageFile") MultipartFile imageFile) {
+        return userService.uploadImage(imageFile, token);
     }
 }

@@ -4,6 +4,7 @@ import com.example.projetTechnique.model.Post;
 import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.PostRepository;
 import com.example.projetTechnique.repository.UserRepository;
+import com.example.projetTechnique.utilities.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,8 @@ public class PostService {
 
     @Autowired
     private FileStorageService fileStorageService;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     public ResponseEntity<?> createPost(Post post, String token) {
         String jwtToken = token.substring(7);
@@ -36,7 +39,7 @@ public class PostService {
             User loggedInUser = userService.findUserById(loggedInUserId);
             post.setUser(loggedInUser);
             post.setDateCreation(new Date());
-            
+
 
             postRepository.save(post);
             return ResponseEntity.status(HttpStatus.CREATED).body(post);
@@ -85,6 +88,35 @@ public class PostService {
             else{
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete post");
             }
+    }
+
+    public ResponseEntity<?> uploadImage(Long postId, MultipartFile imageFile, String token) {
+        String jwtToken=jwtUtil.extractToken(token);
+        Long loggedInUserId = userService.getLoggedInUserId(jwtToken);
+        if (loggedInUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
+        }
+
+        Optional<Post> optionalPost = postRepository.findById(postId);
+        if (optionalPost.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Post not found\"}");
+        }
+
+        Post post = optionalPost.get();
+        if (!post.getUser().getId().equals(loggedInUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"You are not allowed to upload an image for this post\"}");
+        }
+
+        if (imageFile == null || imageFile.isEmpty()
+                || (!imageFile.getContentType().equals("image/jpeg") && !imageFile.getContentType().equals("image/jpg") && !imageFile.getContentType().equals("image/png"))) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"Invalid image file\"}");
+        }
+
+        String imagePath = fileStorageService.store(imageFile);
+        post.setImage(imagePath);
+        postRepository.save(post);
+
+        return ResponseEntity.ok("{\"message\":\"Image uploaded successfully\", \"imagePath\":\"" + imagePath + "\"}");
     }
 
     public ResponseEntity<?> updatePost(Long idPost, Post updatedPost, MultipartFile imageFile) {

@@ -3,6 +3,7 @@ package com.example.projetTechnique.service;
 import com.example.projetTechnique.Enum.Role;
 import com.example.projetTechnique.controller.bodies.UserLoginRequest;
 import com.example.projetTechnique.controller.responses.AuthResponse;
+import com.example.projetTechnique.model.Post;
 import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.UserRepository;
 import com.example.projetTechnique.utilities.JwtUtil;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +31,15 @@ public class UserService {
 
     @Autowired
     private HttpServletRequest request;
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.jwtUtil = jwtUtil;
     }
 
     public List<User> findAll() {
@@ -231,4 +236,26 @@ public class UserService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User update failed\"}");
         }
     }
+
+    public ResponseEntity<?> uploadImage(MultipartFile imageFile, String token) {
+        String jwtToken=jwtUtil.extractToken(token);
+        Long loggedInUserId = getLoggedInUserId(jwtToken);
+        if (loggedInUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized Or user Not Found\"}");
+        }
+
+        User user=userRepository.findUserById(loggedInUserId);
+
+        if (imageFile == null || imageFile.isEmpty()
+                || (!imageFile.getContentType().equals("image/jpeg") && !imageFile.getContentType().equals("image/jpg") && !imageFile.getContentType().equals("image/png"))) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"Invalid image file\"}");
+        }
+
+        String imagePath = fileStorageService.store(imageFile);
+        user.setImage(imagePath);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("{\"message\":\"Image uploaded successfully\", \"imagePath\":\"" + imagePath + "\"}");
+    }
+
 }
