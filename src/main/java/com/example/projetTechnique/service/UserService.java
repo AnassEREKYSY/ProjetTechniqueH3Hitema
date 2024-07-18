@@ -42,10 +42,11 @@ public class UserService {
     }
 
     public ResponseEntity<?> getUserById(Long userId) {
-        try {
-            Optional<User> user = userRepository.findById(userId);
+        Optional<User> user = userRepository.findById(userId);
+        if(user!=null){
             return ResponseEntity.ok(user);
-        } catch (Exception e) {
+        }
+        else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User not found with id: " + userId + "\"}");
         }
     }
@@ -65,14 +66,16 @@ public class UserService {
 
     @Transactional
     public ResponseEntity<?> deleteUser(Long userId) {
-        try {
             User existingUser = userRepository.findById(userId)
                     .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
             userRepository.delete(existingUser);
-            return ResponseEntity.ok("{\"message\":\"User deleted successfully\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User deletion failed\"}");
-        }
+            User TestUser=userRepository.findUserById(userId);
+            if(TestUser==null){
+                return ResponseEntity.ok("{\"message\":\"User deleted successfully\"}");
+            }
+            else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User deletion failed\"}");
+            }
 
     }
 
@@ -82,6 +85,7 @@ public class UserService {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + updatedUser.getId()));
 
+        User TestUser=existingUser;
         existingUser.setFirstName(updatedUser.getFirstName());
         existingUser.setLastName(updatedUser.getLastName());
         existingUser.setEmail(updatedUser.getEmail());
@@ -91,24 +95,25 @@ public class UserService {
             String hashedPassword = passwordEncoder.encode(updatedUser.getPassword());
             existingUser.setPassword(hashedPassword);
         }
-
-        try {
-            userRepository.save(existingUser);
+        userRepository.save(existingUser);
+        if(TestUser!=existingUser){
             return ResponseEntity.ok(updatedUser);
-        } catch (Exception e) {
+        }
+        else{
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User update failed\"}");
         }
-
     }
 
     @Transactional
     public ResponseEntity<?> register(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(Role.USER);
-        try {
-            userRepository.save(user);
+        List<User> Users =userRepository.findAll();
+        userRepository.save(user);
+        if(Users.size()!=userRepository.findAll().size()){
             return ResponseEntity.status(HttpStatus.CREATED).body(user);
-        } catch (Exception e) {
+        }
+        else{
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User registration failed\"}");
         }
     }
@@ -180,7 +185,6 @@ public class UserService {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
-
         return ResponseEntity.ok(user);
     }
 
@@ -227,5 +231,4 @@ public class UserService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"User update failed\"}");
         }
     }
-
 }

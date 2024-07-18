@@ -4,7 +4,6 @@ import com.example.projetTechnique.model.Post;
 import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.PostRepository;
 import com.example.projetTechnique.repository.UserRepository;
-import io.jsonwebtoken.MalformedJwtException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.AccessDeniedException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -61,17 +59,17 @@ public class PostService {
     }
 
     public ResponseEntity<?> getPostById(Long id) {
-        try {
-            Post post = postRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("Post not found with id: " + id));
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with id: " + id));
+        if(post!=null){
             return ResponseEntity.ok(post);
-        } catch (Exception e) {
+        }
+        else{
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Post not found with id: " + id + "\"}");
         }
     }
 
     public ResponseEntity<?> deletePost(Long id,String token ) {
-        try {
             Long userId = userService.getLoggedInUserId(token);
             User user = userService.findUserById(userId);
 
@@ -81,25 +79,23 @@ public class PostService {
                 throw new IllegalStateException("Post does not have an associated user");
             }
             if (!post.getUser().equals(user)) {
-                throw new AccessDeniedException("You are not authorized to delete this post");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete post");
             }
             postRepository.delete(post);
-
-            return ResponseEntity.ok("{\"message\":\"Post deleted successfully\"}");
-        } catch (MalformedJwtException | IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Invalid JWT token: " + e.getMessage() + "\"}");
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"Access Denied: " + e.getMessage() + "\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete post: " + e.getMessage() + "\"}");
-        }
+            Post TestPost=postRepository.findById(id).get();
+            if(TestPost==null){
+                return ResponseEntity.ok("{\"message\":\"Post deleted successfully\"}");
+            }
+            else{
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete post");
+            }
     }
 
     public ResponseEntity<?> updatePost(Long idPost, Post updatedPost, MultipartFile imageFile) {
-        try {
             Optional<Post> optionalPost = postRepository.findById(idPost);
             if (optionalPost.isPresent()) {
                 Post existingPost = optionalPost.get();
+                Post TestPost=existingPost;
 
                 if (updatedPost.getImage() != null && !updatedPost.getImage().isEmpty()) {
                     existingPost.setImage(updatedPost.getImage());
@@ -120,13 +116,14 @@ public class PostService {
                 }
 
                 postRepository.save(existingPost);
-                return ResponseEntity.ok(existingPost);
+                if(existingPost!=TestPost){
+                    return ResponseEntity.ok(existingPost);
+                }
+                else{
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to update post\"}");
+                }
+
             }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Post with id " + idPost + " not found\"}");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Post with id " + idPost + " not found\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to update post\"}");
-        }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to update post\"}");
     }
 }

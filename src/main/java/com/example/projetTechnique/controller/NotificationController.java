@@ -1,10 +1,10 @@
 package com.example.projetTechnique.controller;
 
+import com.example.projetTechnique.Enum.NotificationType;
 import com.example.projetTechnique.model.Notification;
 import com.example.projetTechnique.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,10 +16,17 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    @GetMapping("/{userId}")
-    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/getAll/{userId}")
     public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable Long userId) {
-        List<Notification> notifications = notificationService.getNotificationsForUser(userId);
-        return ResponseEntity.ok(notifications);
+        return ResponseEntity.ok(notificationService.getNotificationsForUser(userId));
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<Notification> createNotification(@RequestParam Long recipientId,
+                                                           @RequestParam Long postId,
+                                                           @RequestParam String message,
+                                                           @RequestParam NotificationType type) {
+        Notification notification = notificationService.createNotification(recipientId, postId, message, type);
+        return ResponseEntity.ok(notification);
     }
 }

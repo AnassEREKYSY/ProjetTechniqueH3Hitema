@@ -1,11 +1,13 @@
 package com.example.projetTechnique.service;
 
+import com.example.projetTechnique.Enum.NotificationType;
 import com.example.projetTechnique.model.Like;
 import com.example.projetTechnique.model.Post;
 import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.LikeRepository;
 import com.example.projetTechnique.repository.PostRepository;
 import com.example.projetTechnique.repository.UserRepository;
+import com.example.projetTechnique.utilities.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,8 +34,12 @@ public class LikeService {
     @Autowired
     NotificationService notificationService;
 
-    public ResponseEntity<?> createLike(String token, Long postId) {
+    @Autowired
+    JwtUtil jwtUtil;
+
+    public ResponseEntity<?> createLike(String bearerToken, Long postId) {
         try {
+            String token = jwtUtil.extractToken(bearerToken); // Extract the token
             Long userId = userService.getLoggedInUserId(token);
             Optional<User> userOptional = userRepository.findById(userId);
             Optional<Post> postOptional = postRepository.findById(postId);
@@ -51,7 +57,7 @@ public class LikeService {
                 like.setDateLike(new Date());
                 likeRepository.save(like);
                 String message = "User " + user.getUserName() + " liked your post.";
-                notificationService.createNotification(post.getUser().getId(), postId, message);
+                notificationService.createNotification(post.getUser().getId(), postId, message,NotificationType.LIKE);
 
                 return ResponseEntity.status(HttpStatus.CREATED).body(like);
             }
@@ -62,7 +68,6 @@ public class LikeService {
     }
 
     public ResponseEntity<?> deleteLike(String token, Long likeId){
-        try {
             Long userId = userService.getLoggedInUserId(token);
             Optional<Like> likeOptional = likeRepository.findById(likeId);
             Optional<User> userOptional = userRepository.findById(userId);
@@ -70,15 +75,13 @@ public class LikeService {
                 Like like = likeOptional.get();
                 if (like.getUser().equals(userOptional.get())) {
                     likeRepository.deleteById(likeId);
-                    return ResponseEntity.ok("{\"message\":\"Like deleted successfully\"}");
+                    Like TestLike=likeRepository.findById(likeId).get();
+                    if(TestLike==null){
+                        return ResponseEntity.ok("{\"message\":\"Like deleted successfully\"}");
+                    }
                 }
             }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Like or User not found\"}");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Like or User not found\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete like: " + e.getMessage() + "\"}");
-        }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete like");
     }
 
     public ResponseEntity<?> getAllLikes() {

@@ -1,5 +1,6 @@
 package com.example.projetTechnique.service;
 
+import com.example.projetTechnique.Enum.NotificationType;
 import com.example.projetTechnique.model.Comment;
 import com.example.projetTechnique.model.Post;
 import com.example.projetTechnique.model.User;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.AccessDeniedException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +49,7 @@ public class CommentService {
             comment.setDateComment(new Date());
             commentRepository.save(comment);
             String message = "User " + user.getUserName() + " liked your post.";
-            notificationService.createNotification(post.getUser().getId(), postId, message);
+            notificationService.createNotification(post.getUser().getId(), postId, message, NotificationType.COMMENT);
             return ResponseEntity.status(HttpStatus.CREATED).body(comment);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User or Post not found\"}");
@@ -58,23 +58,20 @@ public class CommentService {
         }
     }
 
-    public ResponseEntity<?> deleteComment(String token, Long commentId) throws AccessDeniedException {
-        try {
+    public ResponseEntity<?> deleteComment(String token, Long commentId) {
             Long userId = userService.getLoggedInUserId(token);
             Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new IllegalArgumentException("Comment not found"));
 
             if (!comment.getUser().getId().equals(userId)) {
-                throw new AccessDeniedException("User not authorized to delete this comment");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment");
             }
             commentRepository.delete(comment);
-            return ResponseEntity.ok("{\"message\":\"Comment deleted successfully\"}");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Comment not found\"}");
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"Access Denied\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment: " + e.getMessage() + "\"}");
-        }
+            if(commentRepository.findById(commentId)==null){
+                return ResponseEntity.ok("{\"message\":\"Comment deleted successfully\"}");
+            }
+            else{
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment");
+            }
     }
 
     public ResponseEntity<?> getAllComments() {
@@ -95,17 +92,24 @@ public class CommentService {
         }
     }
 
-    public Comment updateComment(Long id, Long userId, Comment updatedComment) {
+    public ResponseEntity<?> updateComment(Long id, String token, Comment updatedComment) {
+
+        Long userId = jwtUtil.extractUserId(token);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
+        }
         Optional<Comment> optionalComment = commentRepository.findById(id);
+
         if (optionalComment.isPresent()) {
             Comment comment = optionalComment.get();
 
             if (!comment.getUser().getId().equals(userId)) {
-                throw new IllegalArgumentException("User is not authorized to update this comment");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
             }
 
             comment.setContenu(updatedComment.getContenu());
-            return commentRepository.save(comment);
+            commentRepository.save(comment);
+            return ResponseEntity.ok(updatedComment);
         }
         return null;
     }

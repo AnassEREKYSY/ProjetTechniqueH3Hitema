@@ -1,6 +1,9 @@
 package com.example.projetTechnique.model;
 
+import com.example.projetTechnique.Enum.NotificationType;
 import jakarta.persistence.*;
+import org.aspectj.weaver.ast.Not;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,11 +12,12 @@ public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private Long recipientId;
     private Long postId;
     private String message;
     private LocalDateTime timestamp;
+    @Enumerated(EnumType.STRING)
+    private NotificationType type;
 
     public Long getId() {
         return id;
@@ -45,5 +49,11 @@ public class Notification {
     }
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+    public NotificationType getType() {
+        return type;
+    }
+    public void setType(NotificationType type) {
+        this.type = type;
     }
 }

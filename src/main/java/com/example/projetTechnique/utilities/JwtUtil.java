@@ -13,8 +13,8 @@ import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private static final String SECRET_KEY = "your_secret_key";
-    private static final long EXPIRATION_TIME = 864_000_000;
+    private static final String SECRET_KEY = "fB2#uTp7vW@9Lp!gZkQ2rG%6sH&4mN";
+    private static final long EXPIRATION_TIME = 86_400_000;
 
     @Autowired
     UserRepository userRepository;
@@ -38,7 +38,6 @@ public class JwtUtil {
                     .parseClaimsJws(token)
                     .getBody();
         } catch (SignatureException e) {
-            // Handle invalid signature
             return null;
         }
     }
@@ -52,7 +51,6 @@ public class JwtUtil {
                 return user.getId();
             }
         }
-
         return null;
     }
 
@@ -63,5 +61,12 @@ public class JwtUtil {
 
     public static boolean validateToken(String token) {
         return extractClaims(token) != null;
+    }
+
+    public String extractToken(String bearerToken) {
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        throw new IllegalArgumentException("Invalid token format");
     }
 }

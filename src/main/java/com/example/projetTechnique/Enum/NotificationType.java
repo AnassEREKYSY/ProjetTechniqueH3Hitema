@@ -1,2 +1,6 @@
-package com.example.projetTechnique.Enum;public class NotificationType {
+package com.example.projetTechnique.Enum;
+
+public enum NotificationType {
+    LIKE,
+    COMMENT
 }
