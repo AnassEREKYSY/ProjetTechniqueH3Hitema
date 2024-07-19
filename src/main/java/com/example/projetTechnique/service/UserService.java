@@ -17,6 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +39,8 @@ public class UserService {
     private HttpServletRequest request;
     @Autowired
     private FileStorageService fileStorageService;
+
+    private static final String UPLOAD_DIR = "src/main/resources/static/users";
 
     @Autowired
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService, JwtUtil jwtUtil) {
@@ -237,25 +245,49 @@ public class UserService {
         }
     }
 
+
     public ResponseEntity<?> uploadImage(MultipartFile imageFile, String token) {
-        String jwtToken=jwtUtil.extractToken(token);
+        String jwtToken = jwtUtil.extractToken(token);
         Long loggedInUserId = getLoggedInUserId(jwtToken);
+
         if (loggedInUserId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized Or user Not Found\"}");
         }
 
-        User user=userRepository.findUserById(loggedInUserId);
+        User user = userRepository.findUserById(loggedInUserId);
 
-        if (imageFile == null || imageFile.isEmpty()
-                || (!imageFile.getContentType().equals("image/jpeg") && !imageFile.getContentType().equals("image/jpg") && !imageFile.getContentType().equals("image/png"))) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"User not found\"}");
+        }
+
+        if (imageFile == null || imageFile.isEmpty() ||
+                (!imageFile.getContentType().equals("image/jpeg") &&
+                        !imageFile.getContentType().equals("image/jpg") &&
+                        !imageFile.getContentType().equals("image/png"))) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"Invalid image file\"}");
         }
 
-        String imagePath = fileStorageService.store(imageFile);
-        user.setImage(imagePath);
-        userRepository.save(user);
+        try {
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
 
-        return ResponseEntity.ok("{\"message\":\"Image uploaded successfully\", \"imagePath\":\"" + imagePath + "\"}");
+            String originalFilename = imageFile.getOriginalFilename();
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            String uniqueFilename = "user_" + loggedInUserId + "_" + System.currentTimeMillis() + fileExtension;
+
+            Path filePath = uploadPath.resolve(uniqueFilename);
+            Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            String imagePath = "/users/" + uniqueFilename;
+            user.setImage(imagePath);
+            userRepository.save(user);
+
+            return ResponseEntity.ok("{\"message\":\"Image uploaded successfully\", \"imagePath\":\"" + imagePath + "\"}");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Could not upload the image\"}");
+        }
     }
 
 }

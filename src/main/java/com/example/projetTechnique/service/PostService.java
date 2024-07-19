@@ -12,10 +12,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-
 @Service
 public class PostService {
     @Autowired
@@ -31,6 +35,8 @@ public class PostService {
     private FileStorageService fileStorageService;
     @Autowired
     private JwtUtil jwtUtil;
+
+    private static final String UPLOAD_DIR = "src/main/resources/static/posts";
 
     public ResponseEntity<?> createPost(Post post, String token) {
         String jwtToken = token.substring(7);
@@ -91,10 +97,10 @@ public class PostService {
     }
 
     public ResponseEntity<?> uploadImage(Long postId, MultipartFile imageFile, String token) {
-        String jwtToken=jwtUtil.extractToken(token);
+        String jwtToken = jwtUtil.extractToken(token);
         Long loggedInUserId = userService.getLoggedInUserId(jwtToken);
         if (loggedInUserId == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized Or user Not Found\"}");
         }
 
         Optional<Post> optionalPost = postRepository.findById(postId);
@@ -107,17 +113,35 @@ public class PostService {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("{\"message\":\"You are not allowed to upload an image for this post\"}");
         }
 
-        if (imageFile == null || imageFile.isEmpty()
-                || (!imageFile.getContentType().equals("image/jpeg") && !imageFile.getContentType().equals("image/jpg") && !imageFile.getContentType().equals("image/png"))) {
+        if (imageFile == null || imageFile.isEmpty() ||
+                (!imageFile.getContentType().equals("image/jpeg") &&
+                        !imageFile.getContentType().equals("image/jpg") &&
+                        !imageFile.getContentType().equals("image/png"))) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"message\":\"Invalid image file\"}");
         }
 
-        String imagePath = fileStorageService.store(imageFile);
-        post.setImage(imagePath);
-        postRepository.save(post);
+        try {
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            String originalFilename = imageFile.getOriginalFilename();
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            String uniqueFilename = "post_" + postId + "_" + System.currentTimeMillis() + fileExtension;
 
-        return ResponseEntity.ok("{\"message\":\"Image uploaded successfully\", \"imagePath\":\"" + imagePath + "\"}");
+            Path filePath = uploadPath.resolve(uniqueFilename);
+            Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            String imagePath = "posts/" + uniqueFilename;
+            post.setImage(imagePath);
+            postRepository.save(post);
+
+            return ResponseEntity.ok("{\"message\":\"Image uploaded successfully\", \"imagePath\":\"" + imagePath + "\"}");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Could not upload the image\"}");
+        }
     }
+
 
     public ResponseEntity<?> updatePost(Long idPost, Post updatedPost, MultipartFile imageFile) {
             Optional<Post> optionalPost = postRepository.findById(idPost);

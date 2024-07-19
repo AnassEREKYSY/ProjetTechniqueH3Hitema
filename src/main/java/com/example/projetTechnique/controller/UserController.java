@@ -5,6 +5,7 @@ import com.example.projetTechnique.controller.bodies.ResetPasswordRequest;
 import com.example.projetTechnique.controller.bodies.UserLoginRequest;
 import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.service.UserService;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
