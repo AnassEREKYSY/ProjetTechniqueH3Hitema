@@ -1,6 +1,5 @@
 package com.example.projetTechnique.service;
 
-import com.example.projetTechnique.Enum.NotificationType;
 import com.example.projetTechnique.model.Message;
 import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.MessageRepository;
