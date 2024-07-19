@@ -22,11 +22,11 @@ jobs:
           MYSQL_PASSWORD: canardPassword
         ports:
           - 3306:3306
-        options: |
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
+        options: >
+          --health-cmd="mysqladmin ping --silent" 
+          --health-interval=10s 
+          --health-timeout=10s 
+          --health-retries=10
 
     steps:
       - name: Checkout code
@@ -42,14 +42,14 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: $"{{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}"
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
       - name: Set environment variables
         run: |
-          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> $GITHUB_ENV
-          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> $GITHUB_ENV
-          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> $GITHUB_ENV
+          echo "SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/canardDB" >> $GITHUB_ENV
+          echo "SPRING_DATASOURCE_USERNAME=canardUser" >> $GITHUB_ENV
+          echo "SPRING_DATASOURCE_PASSWORD=canardPassword" >> $GITHUB_ENV
           echo "SPRING_MAIL_USERNAME=${{ secrets.SPRING_MAIL_USERNAME }}" >> $GITHUB_ENV
           echo "SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}" >> $GITHUB_ENV
 
@@ -58,3 +58,7 @@ jobs:
 
       - name: Run tests
         run: mvn test
+
+      - name: Check MySQL Logs
+        if: failure()
+        run: docker logs ${{ job.services.mysql.id }}
