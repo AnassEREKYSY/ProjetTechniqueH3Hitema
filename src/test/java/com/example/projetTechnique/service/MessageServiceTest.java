@@ -96,7 +96,7 @@ public class MessageServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
-    
+
     @Test
     public void testUpdateMessageSuccess() {
         Message updatedMessage = new Message();

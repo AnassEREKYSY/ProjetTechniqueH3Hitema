@@ -1,21 +1,31 @@
 package com.example.projetTechnique;
 
-import io.github.cdimascio.dotenv.Dotenv;
-import io.github.cdimascio.dotenv.DotenvEntry;
+import com.example.projetTechnique.model.Role;
+import com.example.projetTechnique.repository.RoleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import java.util.Map;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
-public class ProjetTechniqueApplication {
+public class ProjetTechniqueApplication implements CommandLineRunner{
 
 	public static void main(String[] args) {
-		Dotenv dotenv = Dotenv.configure().load();
-		for (DotenvEntry entry : dotenv.entries()) {
-			System.setProperty(entry.getKey(), entry.getValue());
-		}
 		SpringApplication.run(ProjetTechniqueApplication.class, args);
+	}
+
+	@Autowired
+	private RoleRepository roleRepository;
+
+	@Override
+	public void run(String... args) throws Exception {
+		Role adminRole = new Role();
+		adminRole.setName("ADMIN");
+		roleRepository.save(adminRole);
+
+
+
 	}
 
 }

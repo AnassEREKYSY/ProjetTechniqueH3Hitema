@@ -120,7 +120,6 @@ public class UserService {
     @Transactional
     public ResponseEntity<?> register(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(Role.USER);
         List<User> Users =userRepository.findAll();
         userRepository.save(user);
         if(Users.size()!=userRepository.findAll().size()){
