@@ -2,6 +2,7 @@ package com.example.projetTechnique.controller;
 
 import com.example.projetTechnique.model.Message;
 import com.example.projetTechnique.service.MessageService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/messages")
 public class MessageController {

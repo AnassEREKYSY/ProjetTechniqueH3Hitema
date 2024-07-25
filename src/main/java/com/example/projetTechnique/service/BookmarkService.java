@@ -6,15 +6,19 @@ import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.BookmarkRepository;
 import com.example.projetTechnique.repository.PostRepository;
 import com.example.projetTechnique.repository.UserRepository;
+import com.example.projetTechnique.security.JwtTokenProvider;
 import com.example.projetTechnique.utilities.JwtUtil;
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
+@AllArgsConstructor
 @Service
 @Transactional
 public class BookmarkService {
@@ -31,18 +35,23 @@ public class BookmarkService {
      @Autowired
      private JwtUtil jwtUtil;
 
+     @Autowired
+     private JwtTokenProvider jwtTokenProvider;
+
     public ResponseEntity<?> addBookmark(String token, Long postId) {
-        String validToken=jwtUtil.extractToken(token);
+        String validToken=jwtTokenProvider.extractToken(token);
         Long userId=jwtUtil.extractUserId(validToken);
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        Optional<User> user = userRepository.findById(userId);
+        Optional<Post> post = postRepository.findById(postId);
+        if (user.isPresent() && post.isPresent()) {
+            Bookmark bookmark = new Bookmark();
+            bookmark.setUser(user.get());
+            bookmark.setPost(post.get());
 
-        Bookmark bookmark = new Bookmark();
-        bookmark.setUser(user);
-        bookmark.setPost(post);
-
-        bookmarkRepository.save(bookmark);
-        return ResponseEntity.status(HttpStatus.CREATED).body(bookmark);
+            bookmarkRepository.save(bookmark);
+            return ResponseEntity.status(HttpStatus.CREATED).body(bookmark);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
     }
 
     public List<Bookmark> getAllBookmarks() {
@@ -56,22 +65,21 @@ public class BookmarkService {
     }
 
     public ResponseEntity<?> updateBookmark(Long bookmarkId, Long newPostId, String token) {
-        String validToken=jwtUtil.extractToken(token);
+        String validToken=jwtTokenProvider.extractToken(token);
         Long userId=jwtUtil.extractUserId(validToken);
 
-        Bookmark bookmark = bookmarkRepository.findById(bookmarkId)
-                .orElseThrow(() -> new RuntimeException("Bookmark not found"));
+        Optional<Bookmark> bookmark = bookmarkRepository.findById(bookmarkId);
 
-        if(bookmark.getUser().getId()!=userId){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Could not update bookmark\"}");
+        if(bookmark.get().getUser().getId()!=userId){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Could not update bookmark User Unauthorized");
         }
-
-        Post newPost = postRepository.findById(newPostId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-
-        bookmark.setPost(newPost);
-        bookmarkRepository.save(bookmark);
-        return ResponseEntity.ok(bookmark);
+        Optional<Post> newPost = postRepository.findById(newPostId);
+        if(newPost.isPresent()){
+            bookmark.get().setPost(newPost.get());
+            bookmarkRepository.save(bookmark.get());
+            return ResponseEntity.ok(bookmark);
+        }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Post Not Found");
     }
 }
 

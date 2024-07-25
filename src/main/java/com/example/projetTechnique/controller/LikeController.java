@@ -1,20 +1,18 @@
 package com.example.projetTechnique.controller;
 
 import com.example.projetTechnique.service.LikeService;
-import com.example.projetTechnique.service.UserService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
-
+@AllArgsConstructor
 @RestController
 @RequestMapping("/likes")
 public class LikeController {
+
     @Autowired
     private LikeService likeService;
-    @Autowired
-    private UserService userService;
 
     @PostMapping("/create/{postId}")
     public ResponseEntity<?> createLike(@RequestHeader("Authorization") String token, @PathVariable("postId") Long postId) {
@@ -22,7 +20,7 @@ public class LikeController {
     }
 
     @DeleteMapping("/delete/{likeId}")
-    public ResponseEntity<?> deleteLike(@PathVariable("likeId") Long likeId, @RequestHeader("Authorization") String token) throws AccessDeniedException {
+    public ResponseEntity<?> deleteLike(@PathVariable("likeId") Long likeId, @RequestHeader("Authorization") String token) {
         return likeService.deleteLike(token,likeId);
     }
 

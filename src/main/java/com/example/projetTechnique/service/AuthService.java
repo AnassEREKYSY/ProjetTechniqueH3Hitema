@@ -1,6 +1,7 @@
 package com.example.projetTechnique.service;
 
 import com.example.projetTechnique.exception.CanardApiExecption;
+import com.example.projetTechnique.model.JwtAuthResponse;
 import com.example.projetTechnique.model.Login;
 import com.example.projetTechnique.model.Role;
 import com.example.projetTechnique.model.User;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @AllArgsConstructor
@@ -32,39 +34,55 @@ public class AuthService {
 
 
 
-    public String loggin(Login login) {
-        Authentication authentication = authenticationManager.
-                authenticate(new UsernamePasswordAuthenticationToken(login.getUsernameOrEmail(),login.getPassword()));
+    public JwtAuthResponse loggin(Login login) {
+        Authentication authentication = authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        User userOptional =userRepository.findByEmail(login.getEmail());
+        if (userOptional==null) {
+            throw new CanardApiExecption(HttpStatus.UNAUTHORIZED, "Invalid username or email");
+        }
         String token = jwtTokenProvider.generateToken(authentication);
 
-        return token;
+        JwtAuthResponse jwtAuthResponse = new JwtAuthResponse();
+        jwtAuthResponse.setAccesToken(token);
+
+        return jwtAuthResponse;
     }
 
     public User register(User user) {
-        User userByUserName = userRepository.findByUserName(user.getUserName());
-        if (userByUserName != null){
-            throw  new CanardApiExecption(HttpStatus.BAD_REQUEST, "Username is already exists");
+        User userByUserName = userRepository.findByUserName(user.getUsername());
+        if (userByUserName != null) {
+            throw new CanardApiExecption(HttpStatus.BAD_REQUEST, "Username already exists");
         }
-        User userByEmail = userRepository.findByEmail(user.getEmail());
 
-        if (userByEmail != null){
-            throw  new CanardApiExecption(HttpStatus.BAD_REQUEST,"Email is already exists");
+        User userByEmail = userRepository.findByEmail(user.getEmail());
+        if (userByEmail != null) {
+            throw new CanardApiExecption(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
         User userToSave = new User();
         userToSave.setEmail(user.getEmail());
         userToSave.setLastName(user.getLastName());
         userToSave.setFirstName(user.getFirstName());
-        userToSave.setUserName(user.getUserName());
+        userToSave.setUserName(user.getUsername());
         userToSave.setPassword(passwordEncoder.encode(user.getPassword()));
 
         Set<Role> roles = new HashSet<>();
-        Role userRole = roleRepository.findRoleByName("USER").get();
+        Optional<Role> userRoleOpt = roleRepository.findRoleByName("USER");
+        Role userRole;
+        if (userRoleOpt.isEmpty()) {
+            Role role = new Role();
+            role.setName("USER");
+            userRole = roleRepository.save(role);
+        } else {
+            userRole = userRoleOpt.get();
+        }
         roles.add(userRole);
         userToSave.setRoles(roles);
-        userRepository.save(userToSave);
 
-        return userToSave;
+        return userRepository.save(userToSave);
     }
+
 }

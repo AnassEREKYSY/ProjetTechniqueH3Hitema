@@ -1,20 +1,19 @@
 package com.example.projetTechnique.security;
 
 import com.example.projetTechnique.exception.CanardApiExecption;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider {
@@ -26,19 +25,26 @@ public class JwtTokenProvider {
     private long jwtExpiration;
 
     public String generateToken(Authentication authentication) {
-        String username = authentication.getName();
-        Date currentDate = new Date();
-        Date expireDate = new Date(currentDate.getTime() + jwtExpiration);
+        UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
+
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(currentDate)
-                .setExpiration(expireDate)
-                .signWith(key())
+                .setSubject(userPrincipal.getUsername())
+                .claim("roles", userPrincipal.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList()))
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key(), SignatureAlgorithm.HS512)  // Updated to use key()
                 .compact();
     }
 
     private Key key() {
+        if (jwtSecret == null || jwtSecret.isEmpty()) {
+            throw new IllegalArgumentException("JWT Secret key cannot be null or empty");
+        }
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
 
@@ -53,6 +59,7 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         try {
+            System.out.println("Token: " + token); // Debug print
             Jwts.parserBuilder()
                     .setSigningKey(key())
                     .build()
@@ -67,5 +74,12 @@ public class JwtTokenProvider {
         } catch (IllegalArgumentException illegalArgumentException) {
             throw new CanardApiExecption(HttpStatus.BAD_REQUEST, "JWT Claims string is null or empty");
         }
+    }
+
+    public String extractToken(String bearerToken) {
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7).trim();
+        }
+        return bearerToken != null ? bearerToken.trim() : null;
     }
 }

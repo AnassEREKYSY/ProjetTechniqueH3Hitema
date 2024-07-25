@@ -2,19 +2,17 @@ package com.example.projetTechnique.controller;
 
 import com.example.projetTechnique.model.Comment;
 import com.example.projetTechnique.service.CommentService;
-import com.example.projetTechnique.utilities.JwtUtil;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/comments")
 public class CommentController {
     @Autowired
     private CommentService commentService;
-
-    @Autowired
-    private JwtUtil jwtUtil;
 
     @PostMapping("/create/{postId}")
     public ResponseEntity<?> createComment(@RequestHeader("Authorization") String token,

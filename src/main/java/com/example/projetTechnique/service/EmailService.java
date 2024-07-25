@@ -1,19 +1,15 @@
 package com.example.projetTechnique.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+@AllArgsConstructor
 @Service
 public class EmailService {
 
     private final JavaMailSender mailSender;
-
-    @Autowired
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
 
     public void sendResetToken(String email, String resetToken) {
         SimpleMailMessage message = new SimpleMailMessage();

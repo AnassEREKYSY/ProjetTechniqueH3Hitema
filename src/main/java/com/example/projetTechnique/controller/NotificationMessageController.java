@@ -2,12 +2,14 @@ package com.example.projetTechnique.controller;
 
 import com.example.projetTechnique.model.NotificationMessage;
 import com.example.projetTechnique.service.NotificationMessageService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/notificationMessage")
 public class NotificationMessageController {
@@ -26,7 +28,7 @@ public class NotificationMessageController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<NotificationMessage> createNotification(@RequestParam Long recipientId,
+    public ResponseEntity<?> createNotification(@RequestParam Long recipientId,
                                                            @RequestParam Long senderID,
                                                            @RequestParam String message) {
         return ResponseEntity.ok(notificationService.createMessageNotification(recipientId, senderID, message));

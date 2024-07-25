@@ -2,28 +2,25 @@ package com.example.projetTechnique.controller;
 
 import com.example.projetTechnique.model.Post;
 import com.example.projetTechnique.service.PostService;
-import com.example.projetTechnique.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.security.PermitAll;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.AccessDeniedException;
+import java.io.IOException;
 
+
+@AllArgsConstructor
 @RestController
 @RequestMapping("/posts")
 public class PostController {
 
-    private final PostService postService;
-    private final UserService userService;
-
     @Autowired
-    public PostController(PostService postService, UserService userService) {
-        this.postService = postService;
-        this.userService = userService;
-    }
+    private final PostService postService;
 
 
     @PostMapping("/create")
@@ -31,14 +28,10 @@ public class PostController {
         return postService.createPost(new ObjectMapper().readValue(postJson, Post.class), token);
     }
 
+    @PermitAll
     @GetMapping("/getAll")
     public ResponseEntity<?> getAllPosts() {
         return postService.getAllPosts();
-    }
-
-    @DeleteMapping("/delete/{idPost}")
-    public ResponseEntity<?> deletePost(@PathVariable("idPost") Long idPost, @RequestHeader("Authorization") String token) throws AccessDeniedException {
-        return postService.deletePost(idPost,token);
     }
 
     @GetMapping("/one/{id}")
@@ -46,10 +39,20 @@ public class PostController {
         return postService.getPostById(id);
     }
 
+    @DeleteMapping("/delete/{idPost}")
+    public ResponseEntity<?> deletePost(@PathVariable("idPost") Long idPost, @RequestHeader("Authorization") String token){
+        return postService.deletePost(idPost,token);
+    }
 
     @PutMapping("/update/{idPost}")
-    public ResponseEntity<?> updatePost(@PathVariable("idPost") Long idPost, @RequestParam("post") String postJson, @RequestParam("image") MultipartFile imageFile) throws JsonProcessingException {
-        return postService.updatePost(idPost, new ObjectMapper().readValue(postJson, Post.class), imageFile);
+    public ResponseEntity<?> updatePost(
+            @PathVariable("idPost") Long idPost,
+            @RequestParam("post") String postJson,
+            @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @RequestHeader("Authorization") String token
+    ) throws JsonProcessingException {
+        Post post = new ObjectMapper().readValue(postJson, Post.class);
+        return postService.updatePost(idPost, post, imageFile, token);
     }
 
     @PostMapping("/uploadImage/{postId}")

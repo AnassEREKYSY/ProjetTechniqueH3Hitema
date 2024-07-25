@@ -7,6 +7,7 @@ import com.example.projetTechnique.model.User;
 import com.example.projetTechnique.repository.CommentRepository;
 import com.example.projetTechnique.repository.PostRepository;
 import com.example.projetTechnique.repository.UserRepository;
+import com.example.projetTechnique.security.JwtTokenProvider;
 import com.example.projetTechnique.utilities.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,50 +30,43 @@ public class CommentService {
     private PostRepository postRepository;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
     private UserService userService;
 
     @Autowired
-    NotificationService notificationService;
+    private NotificationService notificationService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     public ResponseEntity<?> createComment(String token, Long postId, Comment comment) {
-
-        try {
-            String jwtToken = token.substring(7);
-            Long userId = userService.getLoggedInUserId(jwtToken);
-            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("Post not found"));
-
-            comment.setUser(user);
-            comment.setPost(post);
-            comment.setDateComment(new Date());
-            commentRepository.save(comment);
-
-            String message = "User " + user.getUserName() + "commented on your post.";
-
-            notificationService.createNotification(post.getUser().getId(), postId, message, NotificationType.COMMENT);
-            return ResponseEntity.status(HttpStatus.CREATED).body(comment);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or Post not found");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create comment: " + e.getMessage() + "\"}");        }
+        String jwtToken = jwtTokenProvider.extractToken(token);
+        Long userId = userService.getLoggedInUserId(jwtToken);
+        Optional<User> user = userRepository.findById(userId);
+        Optional<Post> post = postRepository.findById(postId);
+        comment.setUser(user.get());
+        comment.setPost(post.get());
+        comment.setDateComment(new Date());
+        commentRepository.save(comment);
+        String message = "User " + user.get().getUsername() + "commented on your post.";
+        notificationService.createNotification(post.get().getUser().getId(), postId, message, NotificationType.COMMENT);
+        return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
     public ResponseEntity<?> deleteComment(String token, Long commentId) {
-            Long userId = userService.getLoggedInUserId(token);
-            Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new IllegalArgumentException("Comment not found"));
-
-            if (!comment.getUser().getId().equals(userId)) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment");
-            }
-            commentRepository.delete(comment);
-            if (commentRepository.findById(commentId).isEmpty()) {
-                return ResponseEntity.ok("{\"message\":\"Comment deleted successfully\"}");
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"message\":\"Failed to delete comment");
-            }
+        Long userId = userService.getLoggedInUserId(token);
+        Optional<Comment> comment = commentRepository.findById(commentId);
+        if (!comment.get().getUser().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete comment");
+        }
+        commentRepository.delete(comment.get());
+        if (commentRepository.findById(commentId).isEmpty()) {
+            return ResponseEntity.ok("Comment deleted successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete comment");
+        }
     }
 
     public ResponseEntity<?> getAllComments() {
@@ -80,7 +74,7 @@ public class CommentService {
         if (!comments.isEmpty()) {
             return ResponseEntity.ok(comments);
         } else {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("{\"message\":\"No comments available\"}");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("No comments available");
         }
     }
 
@@ -89,15 +83,14 @@ public class CommentService {
         if (comment != null) {
             return ResponseEntity.ok(comment);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\":\"Comment not found with id: " + commentId + "\"}");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Comment not found");
         }
     }
 
     public ResponseEntity<?> updateComment(Long id, String token, Comment updatedComment) {
-
         Long userId = jwtUtil.extractUserId(token);
         if (userId == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
         Optional<Comment> optionalComment = commentRepository.findById(id);
 
@@ -105,9 +98,8 @@ public class CommentService {
             Comment comment = optionalComment.get();
 
             if (!comment.getUser().getId().equals(userId)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\":\"Unauthorized\"}");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User Unauthorized");
             }
-
             comment.setContenu(updatedComment.getContenu());
             commentRepository.save(comment);
             return ResponseEntity.ok(updatedComment);
